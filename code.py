@@ -1,4 +1,5 @@
 import customtkinter as ctk
+import pandas as pd
 from geopy.geocoders import Nominatim #used for finding coordinates
 from skyfield.api import Topos, load
 from skyfield.api import hipparcos 
