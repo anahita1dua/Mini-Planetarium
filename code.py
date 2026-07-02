@@ -14,7 +14,7 @@ class MiniPlanetarium:
 		self.root=root
 		self.root.title("Mini Planetarium")
 		self.root.geometry("600×700")
-		self.root.resizable(False False) #in order to fix the window size
+		self.root.resizable(False, False) #in order to fix the window size
 		#setting up the bg
 		bg_image=ctk.CTkImage(
 			light_image=Image.open("galaxy.png"),
