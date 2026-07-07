@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from PIL import Image
 import customtkinter as ctk
+from matplotlib.widgets import Button
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -67,7 +68,7 @@ class MiniPlanetarium:
 		time_str=self.time_entry.get().strip()
 		pollution=self.pollution_dropdown.get()
 		if not city or not date_str or not time_str or not pollution:
-			self.status_label.configure(text="Please fill all the field!", text_color="red")
+			self.status_label.configure(text="Please fill all the fields!", text_color="red")
 			return
 		self.status_label.configure(text="Finding Coordinates & Fetching Stars.....", text_color="yellow")
 		self.root.update()#so that this line is displayed before the programme works on further data so it does not seem to lag
@@ -123,3 +124,42 @@ if __name__=="__main__":
 	app.mainloop()
 
 #end 
+
+
+
+
+fig.canvas.mpl_connect("pick_event", on_pick)
+
+# Try Again button
+button_ax = plt.axes([0.75, 0.02, 0.15, 0.05])
+retry_button = Button(button_ax, 'Try Again')
+
+def retry(event):
+    plt.close(fig)
+
+    self.date_entry.delete(0, "end")
+    self.time_entry.delete(0, "end")
+    self.city_entry.delete(0, "end")
+
+    self.status_label.configure(
+        text="Enter new details and generate again.",
+        text_color="cyan"
+    )
+
+retry_button.on_clicked(retry)
+
+# Save PNG button
+button_ax = plt.axes([0.55, 0.02, 0.15, 0.05])
+save_button = Button(button_ax, 'Save PNG')
+
+def save_map(event):
+    fig.savefig("sky_map.png", dpi=300)
+
+save_button.on_clicked(save_map)
+
+self.status_label.configure(
+    text="Sky Map Generated!",
+    text_color="green"
+)
+
+plt.show()
