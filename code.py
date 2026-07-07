@@ -89,15 +89,17 @@ class MiniPlanetarium:
 			t=self.ts.utc(dt.year, dt.month, dt.day, dt.hour, dt.minute)
 			
 			#Setting up magnitude for visibility
-			mag_limit=6.0 if "Low (Dark Sky)" in pollution else 3.0
-			visible_stars=self.stars_df[self.stars_df["magnitude"]<=10.0]
+			mag_limit=5.0 if "Low (Dark Sky)" in pollution else 2.5
+			visible_stars=self.stars_df[self.stars_df["magnitude"]<=6.0]
 			
 			#Making the sky map
 			fig, ax=plt.subplots(figsize=(8,8),facecolor="#0B132B")
 			ax.set_facecolor("#0B132B")
-			ax.scatter(visible_stars["ra_hours"], visible_stars["dec_degrees"], s=(mag_limit-visible_stars['magnitude'])*4 or (visible_stars['magnitude']-mag_limit)*4, color="white", alpha=0.9 , picker=5) #alpha=0.9 so that it looks somewhat translucent and equivalent to real star
+			size=((6-visible_stars["magnitude"]).clip(lower=0.1))*3
+			ax.scatter(visible_stars["ra_hours"], visible_stars["dec_degrees"], s=size, color="white", alpha=0.9 , picker=True) #alpha=0.9 so that it looks somewhat translucent and equivalent to real star
 			ax.set_title("Sky Map above "+city.capitalize()+"\n Date: "+date_str+"\n Time: "+time_str, color="white", fontsize=14)
 			ax.axis("off") #essential so that we do not get the numbers of the graph in our sky map
+			fig.suptitle("CLick stars to view details or close the window to generate new", color="white", y=0.88)
 			
 			def on_pick(event):
 				ind=event.ind[0]#tells the star number which user has clicked
@@ -107,36 +109,21 @@ class MiniPlanetarium:
 				detail_msg="Star ID: "+ str(star_data.name)+ "\n Magnitude: "+str(star_mag)+"\n"+visibility
 				
 						
-				plt.gca().text(star_data["ra_hours"], star_data["dec_degrees"], detail_msg, color="cyan", fontsize=10)
+				plt.gca().text(star_data["ra_hours"], star_data["dec_degrees"], detail_msg, color="gold", fontsize=15)
 				fig.canvas.draw_idle()#so that it works without lagging
 				
 			
 			fig.canvas.mpl_connect("pick_event", on_pick)
-
-            # Try Again button
-			button_ax = plt.axes([0.75, 0.02, 0.15, 0.05])
-			retry_button = Button(button_ax, 'Try Again')
-
-			def retry(event):
-				plt.close(fig)
-
-			self.date_entry.delete(0, "end")
-			self.time_entry.delete(0, "end")
-			self.city_entry.delete(0, "end")
-
-			self.status_label.configure(text="Enter new details and generate again.", text_color="cyan")
-
-			retry_button.on_clicked(retry)
 
 			
 			self.status_label.configure(text="Sky Map Generated!", text_color="green")
 			plt.show()
 			
 		except Exception as e:
-			if 'getaddrinfo failed':
-				self.status_label.configure(text="Check internet connection")
+			if 'getaddrinfo failed' in str(e):
+				self.status_label.configure(text="Check internet connection", text_color="red")
 			else: 
-				self.status_label.configure(text="ERROR: Check date/time format!", text_color="red")
+				self.status_label.configure(text="ERROR!! Try Again!", text_color="red")
 			
 			print (e)
 
