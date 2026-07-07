@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from PIL import Image
 import customtkinter as ctk
 from skyfield.api import Star, wgs84
-from timezonefinder import TimezoneFinder as tf
+from timezonefinder import TimezoneFinder
 import pytz
 
 ctk.set_appearance_mode("dark")
@@ -90,6 +90,7 @@ class MiniPlanetarium:
 			
 			#date/time
 			dt_local = datetime.strptime(date_str + ' ' + time_str,'%d/%m/%Y %H:%M')
+			tf=TimezoneFinder()
 			timezone_name = tf.timezone_at(lat=lat, lng=lon)
 			tz = pytz.timezone(timezone_name)
 			dt_local = tz.localize(dt_local)
@@ -99,7 +100,7 @@ class MiniPlanetarium:
 			
 			#Setting up magnitude for visibility
 			mag_limit=5.5 if "Low (Dark Sky)" in pollution else 2.5
-			visible_stars=self.stars_df[self.stars_df["magnitude"]<=6.5]
+			visible_stars=self.stars_df[self.stars_df["magnitude"]<=6.5].dropna() 
 			
 			#Making the sky map
 			fig, ax=plt.subplots(figsize=(8,8),facecolor="#0B132B")
@@ -109,20 +110,26 @@ class MiniPlanetarium:
 			plot_alt = []
 			plot_size = []
 			plot_data = []
+			plot_color = []
 			for _, star_data in visible_stars.iterrows():
 				star = Star.from_dataframe(star_data)
-				apparent = observer.at(t).observe(star).apparent()
+				astrometric = observer.at(t).observe(star)
+				apparent=astrometric.apparent()
 				alt, az, distance = apparent.altaz()
 				if alt.degrees > 0:
-				   plot_alt.append(alt.degrees)
-       			plot_az.append(az.degrees)
-       			size = max((7 - star_data["magnitude"])* 3, 1)
-       			plot_size.append(size)
-       			plot_data.append(star_data)
+					plot_alt.append(alt.degrees)
+					plot_az.append(az.degrees)
+					size = max((7 - star_data["magnitude"])*2, 0.1) #size of the star in the plot, brighter stars are bigger
+					plot_size.append(size)
+					if star_data["magnitude"] <= mag_limit:
+						plot_color.append("yellow")
+					else:
+						plot_color.append("white")
+					plot_data.append(star_data)
 			ax.set_title("Sky Map above "+city.capitalize()+"\n Date: "+date_str+"\n Time: "+time_str, color="white", fontsize=14)
 			ax.axis("off") #essential so that we do not get the numbers of the graph in our sky map
-			fig.suptitle("CLick stars to view details or close the window to generate new", color="white", y=0.88)
-			scatter = ax.scatter(plot_az, plot_alt, s=plot_size, color="white", alpha=0.9, picker=True)
+			fig.suptitle("CLick stars to view details or close the window to generate new \n yellow ones are the ones visible to naked eyes", color="white", y=0.88)
+			scatter = ax.scatter(plot_az, plot_alt, s=plot_size, color=plot_color, alpha=0.9, picker=True)
 			
 			def on_pick(event):
 				ind=event.ind[0]#tells the star number which user has clicked
@@ -134,7 +141,7 @@ class MiniPlanetarium:
 				x=plot_az[ind]
 				y=plot_alt[ind]
 				plt.gca().text(x, y,  detail_msg, color="gold", fontsize=15)
-				fig.canvas.draw_idle()#so that it works without lagging
+				fig.canvas.draw_idle()
 				
 			
 			fig.canvas.mpl_connect("pick_event", on_pick)
@@ -149,8 +156,8 @@ class MiniPlanetarium:
 			else: 
 				self.status_label.configure(text="ERROR!! Try Again!", text_color="red")
 			
-			print (e)
-
+			import traceback
+			traceback.print_exc()
 			
 			
 if __name__=="__main__":
