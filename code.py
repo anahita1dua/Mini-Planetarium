@@ -4,9 +4,12 @@ from skyfield.api import Topos, load
 from skyfield.data import hipparcos 
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
-from datetime import datetime
+from datetime import datetime, timedelta
 from PIL import Image
 import customtkinter as ctk
+from skyfield.api import Star, wgs84
+from timezonefinder import TimezoneFinder as tf
+import pytz
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -19,7 +22,6 @@ class MiniPlanetarium:
 		self.root.resizable(False, False) #in order to fix the window size
 		#setting up the bg
 
-		from PIL import Image
 		img=Image.open(r"galaxy.png")		
 		bg_image=ctk.CTkImage(
 			light_image=img,
@@ -33,6 +35,8 @@ class MiniPlanetarium:
 		self.ts=load.timescale() #To convert to standard times
 		with load.open(hipparcos.URL) as f:
 			self.stars_df=hipparcos.load_dataframe(f)
+		self.eph = load('de421.bsp')
+		self.earth = self.eph['earth']
 		
 		self.main_frame=ctk.CTkFrame(root, corner_radius=20, fg_color="#1A1A24", width=450, height=550)
 		self.main_frame.place(relx=0.5, rely=0.5, anchor="center")
@@ -85,31 +89,51 @@ class MiniPlanetarium:
 			lat, lon=location.latitude, location.longitude
 			
 			#date/time
-			dt=datetime.strptime(date_str+' '+time_str, '%d/%m/%Y %H:%M')
-			t=self.ts.utc(dt.year, dt.month, dt.day, dt.hour, dt.minute)
+			dt_local = datetime.strptime(date_str + ' ' + time_str,'%d/%m/%Y %H:%M')
+			timezone_name = tf.timezone_at(lat=lat, lng=lon)
+			tz = pytz.timezone(timezone_name)
+			dt_local = tz.localize(dt_local)
+			dt_utc = dt_local.astimezone(pytz.utc)
+
+			t = self.ts.utc(dt_utc.year, dt_utc.month, dt_utc.day, dt_utc.hour, dt_utc.minute, dt_utc.second)
 			
 			#Setting up magnitude for visibility
-			mag_limit=5.0 if "Low (Dark Sky)" in pollution else 2.5
-			visible_stars=self.stars_df[self.stars_df["magnitude"]<=6.0]
+			mag_limit=5.5 if "Low (Dark Sky)" in pollution else 2.5
+			visible_stars=self.stars_df[self.stars_df["magnitude"]<=6.5]
 			
 			#Making the sky map
 			fig, ax=plt.subplots(figsize=(8,8),facecolor="#0B132B")
 			ax.set_facecolor("#0B132B")
-			size=((6-visible_stars["magnitude"]).clip(lower=0.1))*3
-			ax.scatter(visible_stars["ra_hours"], visible_stars["dec_degrees"], s=size, color="white", alpha=0.9 , picker=True) #alpha=0.9 so that it looks somewhat translucent and equivalent to real star
+			observer = self.earth + wgs84.latlon(lat, lon)
+			plot_az = []
+			plot_alt = []
+			plot_size = []
+			plot_data = []
+			for _, star_data in visible_stars.iterrows():
+				star = Star.from_dataframe(star_data)
+				apparent = observer.at(t).observe(star).apparent()
+				alt, az, distance = apparent.altaz()
+				if alt.degrees > 0:
+				   plot_alt.append(alt.degrees)
+       			plot_az.append(az.degrees)
+       			size = max((7 - star_data["magnitude"])* 3, 1)
+       			plot_size.append(size)
+       			plot_data.append(star_data)
 			ax.set_title("Sky Map above "+city.capitalize()+"\n Date: "+date_str+"\n Time: "+time_str, color="white", fontsize=14)
 			ax.axis("off") #essential so that we do not get the numbers of the graph in our sky map
 			fig.suptitle("CLick stars to view details or close the window to generate new", color="white", y=0.88)
+			scatter = ax.scatter(plot_az, plot_alt, s=plot_size, color="white", alpha=0.9, picker=True)
 			
 			def on_pick(event):
 				ind=event.ind[0]#tells the star number which user has clicked
-				star_data=visible_stars.iloc[ind]
+				star_data = plot_data[ind]
 				star_mag=star_data['magnitude']
 				visibility="Visible to naked eye" if star_mag<=mag_limit else "Needs Telescope"
 				detail_msg="Star ID: "+ str(star_data.name)+ "\n Magnitude: "+str(star_mag)+"\n"+visibility
 				
-						
-				plt.gca().text(star_data["ra_hours"], star_data["dec_degrees"], detail_msg, color="gold", fontsize=15)
+				x=plot_az[ind]
+				y=plot_alt[ind]
+				plt.gca().text(x, y,  detail_msg, color="gold", fontsize=15)
 				fig.canvas.draw_idle()#so that it works without lagging
 				
 			
