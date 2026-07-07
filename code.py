@@ -3,10 +3,10 @@ from geopy.geocoders import Nominatim #used for finding coordinates
 from skyfield.api import Topos, load
 from skyfield.data import hipparcos 
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Button
 from datetime import datetime
 from PIL import Image
 import customtkinter as ctk
-from matplotlib.widgets import Button
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -15,7 +15,7 @@ class MiniPlanetarium:
 	def __init__(self,root):
 		self.root=root
 		self.root.title("Mini Planetarium")
-		self.root.geometry("600x700")
+		self.root.geometry("600x650")
 		self.root.resizable(False, False) #in order to fix the window size
 		#setting up the bg
 
@@ -36,8 +36,8 @@ class MiniPlanetarium:
 		
 		self.main_frame=ctk.CTkFrame(root, corner_radius=20, fg_color="#1A1A24", width=450, height=550)
 		self.main_frame.place(relx=0.5, rely=0.5, anchor="center")
-		self.title_label=ctk.CTkLabel(self.main_frame, text="Mini Planetarium", font=("Amaze", 26, "bold"), text_color="#E0E1DD")
-		self.title_label.pack(pady=(130, 200))
+		self.title_label=ctk.CTkLabel(self.main_frame, text="Mini Planetarium", font=("Times New Roman", 26, "bold"), text_color="#E0E1DD")
+		self.title_label.pack(pady=(100, 70))
 		
 		#Date entry box		
 		self.date_entry=ctk.CTkEntry(self.main_frame, placeholder_text="Enter Date (DD/MM/YYYY)", width=320, height=40)
@@ -70,8 +70,10 @@ class MiniPlanetarium:
 		if not city or not date_str or not time_str or not pollution:
 			self.status_label.configure(text="Please fill all the fields!", text_color="red")
 			return
+		
 		self.status_label.configure(text="Finding Coordinates & Fetching Stars.....", text_color="yellow")
-		self.root.update()#so that this line is displayed before the programme works on further data so it does not seem to lag
+		self.root.update_idletasks()
+		self.root.update()
 		
 		
 		try: #using this so that app doesn't crash in case of some errors
@@ -87,13 +89,13 @@ class MiniPlanetarium:
 			t=self.ts.utc(dt.year, dt.month, dt.day, dt.hour, dt.minute)
 			
 			#Setting up magnitude for visibility
-			mag_limit=6.0 if "Low (Dark Sky)" in pollution else 3.5
+			mag_limit=6.0 if "Low (Dark Sky)" in pollution else 3.0
 			visible_stars=self.stars_df[self.stars_df["magnitude"]<=10.0]
 			
 			#Making the sky map
 			fig, ax=plt.subplots(figsize=(8,8),facecolor="#0B132B")
 			ax.set_facecolor("#0B132B")
-			ax.scatter(visible_stars["ra_hours"], visible_stars["dec_degrees"], s=(mag_limit-visible_stars['magnitude'])*4 , color="white", alpha=0.9 , picker=True) #alpha=0.9 so that it looks somewhat translucent and equivalent to real star
+			ax.scatter(visible_stars["ra_hours"], visible_stars["dec_degrees"], s=(mag_limit-visible_stars['magnitude'])*4 or (visible_stars['magnitude']-mag_limit)*4, color="white", alpha=0.9 , picker=5) #alpha=0.9 so that it looks somewhat translucent and equivalent to real star
 			ax.set_title("Sky Map above "+city.capitalize()+"\n Date: "+date_str+"\n Time: "+time_str, color="white", fontsize=14)
 			ax.axis("off") #essential so that we do not get the numbers of the graph in our sky map
 			
@@ -107,16 +109,38 @@ class MiniPlanetarium:
 						
 				plt.gca().text(star_data["ra_hours"], star_data["dec_degrees"], detail_msg, color="cyan", fontsize=10)
 				fig.canvas.draw_idle()#so that it works without lagging
-				print(detail_msg)
+				
 			
 			fig.canvas.mpl_connect("pick_event", on_pick)
+
+            # Try Again button
+			button_ax = plt.axes([0.75, 0.02, 0.15, 0.05])
+			retry_button = Button(button_ax, 'Try Again')
+
+			def retry(event):
+				plt.close(fig)
+
+			self.date_entry.delete(0, "end")
+			self.time_entry.delete(0, "end")
+			self.city_entry.delete(0, "end")
+
+			self.status_label.configure(text="Enter new details and generate again.", text_color="cyan")
+
+			retry_button.on_clicked(retry)
+
 			
 			self.status_label.configure(text="Sky Map Generated!", text_color="green")
 			plt.show()
 			
 		except Exception as e:
-			self.status_label.configure(text="ERROR: Check date/tims format!", text_color="red")
-			print(e)
+			if 'getaddrinfo failed':
+				self.status_label.configure(text="Check internet connection")
+			else: 
+				self.status_label.configure(text="ERROR: Check date/time format!", text_color="red")
+			
+			print (e)
+
+			
 			
 if __name__=="__main__":
 	app=ctk.CTk()
@@ -124,42 +148,3 @@ if __name__=="__main__":
 	app.mainloop()
 
 #end 
-
-
-
-
-fig.canvas.mpl_connect("pick_event", on_pick)
-
-# Try Again button
-button_ax = plt.axes([0.75, 0.02, 0.15, 0.05])
-retry_button = Button(button_ax, 'Try Again')
-
-def retry(event):
-    plt.close(fig)
-
-    self.date_entry.delete(0, "end")
-    self.time_entry.delete(0, "end")
-    self.city_entry.delete(0, "end")
-
-    self.status_label.configure(
-        text="Enter new details and generate again.",
-        text_color="cyan"
-    )
-
-retry_button.on_clicked(retry)
-
-# Save PNG button
-button_ax = plt.axes([0.55, 0.02, 0.15, 0.05])
-save_button = Button(button_ax, 'Save PNG')
-
-def save_map(event):
-    fig.savefig("sky_map.png", dpi=300)
-
-save_button.on_clicked(save_map)
-
-self.status_label.configure(
-    text="Sky Map Generated!",
-    text_color="green"
-)
-
-plt.show()
