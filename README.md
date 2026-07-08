@@ -15,14 +15,14 @@ It combines my interest in astronomy with software development to create a tool 
 10. Visibility determination based on the observer's location and horizon
 
 ## BUILT WITH
--Python
--CustomTkinter
--Matplotlib
--Skyfield
--Pandas
--Pillow
--Geopy
--Timezone finder
+- Python
+- CustomTkinter
+- Matplotlib
+- Skyfield
+- Pandas
+- Pillow
+- Geopy
+- Timezone finder
 
 ## NOTE
 The application uses astronomical datasets and ephemeris files. On the first run, required astronomical data may take some time to download
