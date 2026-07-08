@@ -8,7 +8,11 @@ It combines my interest in astronomy with software development to create a tool 
 3. Highlighting naked-eye visible stars
 4. Location based sky viewing
 5. Real time astronomical calculations
-6. dark-themed space-inspired interface
+6. Dark-themed space-inspired interface
+7. Detailed star information including HIP ID, apparent magnitude, and visibility status
+8. Automatic star labeling for easier identification and exploration
+9. Automatic location coordinate and timezone handling
+10. Visibility determination based on the observer's location and horizon
 
 ## BUILT WITH
 -Python
