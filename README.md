@@ -24,9 +24,6 @@ It combines my interest in astronomy with software development to create a tool 
 - Geopy
 - Timezone finder
 
-## NOTE
-The application uses astronomical datasets and ephemeris files. On the first run, required astronomical data may take some time to download
-
 ## About
 This project was created as a part of my journey of learning Python and exploring the intersection of programming and astronomy.
 Feedback and suggestions are always welcome!
@@ -34,6 +31,6 @@ Feedback and suggestions are always welcome!
 If you find this project interesting, consider giving it a star!!
 
 ## License/Copyright
-© 2026 Cosmic Atlas — Personal Project by Anahita, All Rights Reserved
+© 2026 Mini Planetarium —Anahita Dua, All Rights Reserved
 
 This project is shared for educational and portfolio purposes only. Please do not copy, redistribute, or reuse without permission.
