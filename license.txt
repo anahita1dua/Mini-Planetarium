@@ -1,9 +1,0 @@
-Copyright (C) 2026 Anahita Dua. All Rights Reserved.
-
-This software and its source code are proprietary and confidential. 
-Unauthorized copying, modification, distribution, or use of this file, 
-via any medium, is strictly prohibited. 
-
-Permission to view the source code is granted solely for educational 
-and review purposes on GitHub. No rights are granted to run, compile, 
-or adapt the software for personal, commercial, or non-commercial use without prior written information.
